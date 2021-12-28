@@ -13,18 +13,21 @@ class FileController extends Controller
     {
 
         $fileModel = new File();
-        if ($request->file()) {
-            $fileName = time() . '_' . $request->file->getClientOriginalName();
+        if($request->file()) {
+            $fileName = time().'_'.$request->file->getClientOriginalName();
             $filePath = $request->file('file')->storeAs('uploads', $fileName, 'public');
-            $fileModel->name = time() . '_' . $request->file->getClientOriginalName();
+            $fileModel->name = time().'_'.$request->file->getClientOriginalName();
             $fileModel->file_path = '/storage/' . $filePath;
             $fileModel->save();
-            $message = array('message' => 'file Uploaded Successfully', 'status' => 200);
+            $message = array( 'message' => 'file Uploaded Successfully', 'status' => 200);
             return $message;
-        } else {
+        }
+        else
+        {
             $message = array('message' => 'file Not found', 'status' => 404);
             return $message;
         }
+
     }
 
 
@@ -35,6 +38,7 @@ class FileController extends Controller
         foreach ($matchingFiles as $path) {
             return Storage::get($path);
         }
+
     }
 
     public function delete_file_by_name(Request $request)
@@ -42,7 +46,9 @@ class FileController extends Controller
         $allFiles = Storage::files('public/uploads');
         $matchingFiles = preg_grep('{' . $request->name . '}', $allFiles);
         foreach ($matchingFiles as $path) {
-            Storage::delete($path);
+             Storage::delete($path);
+
         }
+
     }
 }
