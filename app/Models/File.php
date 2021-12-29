@@ -13,9 +13,5 @@ class File extends Model
     protected $fillable = [
         'name', 'file_path'
     ];
-    public function getFileSize()
-    {
-        // Ensure $this->file_path begins with '/public/';
-        return Storage::size($this->file_path);
-    }
+  
 }

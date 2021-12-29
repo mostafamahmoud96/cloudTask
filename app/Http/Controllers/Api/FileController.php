@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\File;
+
 use Illuminate\Support\Facades\Storage;
 
 class FileController extends Controller
@@ -12,59 +13,79 @@ class FileController extends Controller
     public function upload_file(Request $request)
     {
 
-        $fileModel = new File();
         if ($request->file()) {
-            $fileName = time() . '_' . $request->file->getClientOriginalName();
-            $filePath = $request->file('file')->storeAs('uploads', $fileName, 'public');
-            $fileModel->name = time() . '_' . $request->file->getClientOriginalName();
-            $fileModel->file_path = '/storage/' . $filePath;
-            $fileModel->save();
-            return response()
-            ->json(['status' => 200, 'message' => 'File uploaded successfully']);
+            $fileModel = new File();
+            $withoutExt = preg_replace('/\\.[^.\\s]{3,4}$/', '', $request->file->getClientOriginalName()); //remove extenison
+            $fileName = md5($withoutExt);
+            if (File::where('name', $fileName)->exists()) {
+                $path = public_path("storage/uploads");
+                $files = scandir($path);
+                $files = array_diff(scandir($path), array('.', '..'));
+                $matchingFiles = preg_grep('{' . $fileName . '}', $files);
+                if ($matchingFiles) {
+                    foreach ($matchingFiles as $file) {
+                        return  response()->json(['status' => 200, 'message' => 'you already uploaded the file before', 'file' => asset("storage/uploads/$file")]);
+                    }
+                }
+            } elseif (!File::where('name', $fileName)->exists()) {
+                $filePath = $request->file('file')->storeAs('uploads', $fileName, 'public');
+                $fileModel->name = $fileName;
+                $fileModel->file_path = '/storage/' . $filePath;
+                $fileModel->save();
+                return response()->json(['status' => 200, 'message' => 'File uploaded successfully']);
+            } else {
+                return response()
+                    ->json(['status' => 404, 'message' => 'You Must upload type file']);
+            }
         } else {
-            return response()
-            ->json(['status' => 404, 'message' => 'Something went Wrong']);
 
+            return response()
+                ->json(['status' => 404, 'message' => 'You Must upload type file']);
         }
     }
 
 
+
     public function get_file_by_name(Request $request)
     {
-        $path = public_path("storage/uploads");
-        $files = scandir($path);
-        $files = array_diff(scandir($path), array('.', '..'));
-        $matchingFiles = preg_grep('{' . $request->name . '}', $files);
-        if ($matchingFiles) {
-            foreach ($matchingFiles as $file) {
-            
-                return  response()->json(['status' => 200, 'file' => asset("storage/uploads/$file")]);
+        if ($request->has('name')) {
+            $fileName = md5($request->name);
+            $path = public_path("storage/uploads");
+            $file = File::Where('name', $fileName)->first()->name ?? null;
+            if ($file) {
+                return  response()->json(['status' => 200, 'File Name' => $request->name, 'file' => asset("storage/uploads/$file")]);
+            } else {
+                return response()
+                    ->json(['status' => 404, 'message' => 'No Matching File']);
             }
         } else {
             return response()
-                ->json(['status' => 404, 'message' => 'No file matching found']);
+                ->json(['status' => 404, 'message' => 'Input file Name Can not be empty']);
         }
     }
 
     public function delete_file_by_name(Request $request)
     {
 
-        $allFiles = Storage::files('public/uploads');
-        $matchingFiles = preg_grep('{' . $request->name . '}', $allFiles);
-        if(count($matchingFiles))
-        {
-            foreach ($matchingFiles as $path) {
-                 $delete = Storage::delete($path);
-                }
-                if($delete)
-                {
-                    return  response()->json(['status' => 200, 'message' => "file deleted successfull"]);
 
-                }
-        }
-        else
-        {
-            return  response()->json(['status' => 404, 'message' => "No file matching found"]);
+        if ($request->has('name')) {
+            $fileName = md5($request->name);
+            $path = public_path("storage/uploads");
+            $allFiles = Storage::files('public/uploads');
+            $matchingFile = preg_grep('{' . md5($request->name) . '}', $allFiles);
+            Storage::delete($matchingFile); // remove from uploads file
+            $file = File::Where('name', $fileName)->first() ?? null;
+            if ($file) {
+                $file->delete();
+                return  response()->json(['status' => 200, 'message' => 'File is Deleted Successfully']);
+            } else {
+                return response()
+                    ->json(['status' => 404, 'message' => 'No Matching File to be deleted']);
+            }
+        } else {
+
+            return response()
+                ->json(['status' => 404, 'message' => 'Input file Name Can not be empty']);
         }
     }
 }
