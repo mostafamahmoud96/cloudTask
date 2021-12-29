@@ -3,7 +3,7 @@ services:
   app:
     build:
       args:
-        user: clouduser
+        user: test
         uid: 1000
       context: ./
       dockerfile: Dockerfile
@@ -21,10 +21,9 @@ services:
     container_name: cloudvest-db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_DATABASE: "docker_test"
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_PASSWORD: "root"
       SERVICE_TAGS: dev
       SERVICE_NAME: mysql
     volumes:
@@ -37,7 +36,7 @@ services:
     container_name: cloudvest-nginx
     restart: unless-stopped
     ports:
-      - 8001:80
+      - 8000:80
     volumes:
       - ./:/var/www
       - ./docker-compose/nginx:/etc/nginx/conf.d/
