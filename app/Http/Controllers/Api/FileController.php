@@ -13,42 +13,58 @@ class FileController extends Controller
     {
 
         $fileModel = new File();
-        if($request->file()) {
-            $fileName = time().'_'.$request->file->getClientOriginalName();
+        if ($request->file()) {
+            $fileName = time() . '_' . $request->file->getClientOriginalName();
             $filePath = $request->file('file')->storeAs('uploads', $fileName, 'public');
-            $fileModel->name = time().'_'.$request->file->getClientOriginalName();
+            $fileModel->name = time() . '_' . $request->file->getClientOriginalName();
             $fileModel->file_path = '/storage/' . $filePath;
             $fileModel->save();
-            $message = array( 'message' => 'file Uploaded Successfully', 'status' => 200);
-            return $message;
-        }
-        else
-        {
-            $message = array('message' => 'file Not found', 'status' => 404);
-            return $message;
-        }
+            return response()
+            ->json(['status' => 200, 'message' => 'File uploaded successfully']);
+        } else {
+            return response()
+            ->json(['status' => 404, 'message' => 'Something went Wrong']);
 
+        }
     }
 
 
     public function get_file_by_name(Request $request)
     {
-        $allFiles = Storage::files('public/uploads');
-        $matchingFiles = preg_grep('{' . $request->name . '}', $allFiles);
-        foreach ($matchingFiles as $path) {
-            return Storage::get($path);
+        $path = public_path("storage/uploads");
+        $files = scandir($path);
+        $files = array_diff(scandir($path), array('.', '..'));
+        $matchingFiles = preg_grep('{' . $request->name . '}', $files);
+        if ($matchingFiles) {
+            foreach ($matchingFiles as $file) {
+            
+                return  response()->json(['status' => 200, 'file' => asset("storage/uploads/$file")]);
+            }
+        } else {
+            return response()
+                ->json(['status' => 404, 'message' => 'No file matching found']);
         }
-
     }
 
     public function delete_file_by_name(Request $request)
     {
+
         $allFiles = Storage::files('public/uploads');
         $matchingFiles = preg_grep('{' . $request->name . '}', $allFiles);
-        foreach ($matchingFiles as $path) {
-             Storage::delete($path);
+        if(count($matchingFiles))
+        {
+            foreach ($matchingFiles as $path) {
+                 $delete = Storage::delete($path);
+                }
+                if($delete)
+                {
+                    return  response()->json(['status' => 200, 'message' => "file deleted successfull"]);
 
+                }
         }
-
+        else
+        {
+            return  response()->json(['status' => 404, 'message' => "No file matching found"]);
+        }
     }
 }
