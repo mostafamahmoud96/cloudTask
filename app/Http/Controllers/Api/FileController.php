@@ -12,25 +12,24 @@ class FileController extends Controller
 {
     public function upload_file(Request $request)
     {
-
         if ($request->file()) {
             $fileModel = new File();
             $withoutExt = preg_replace('/\\.[^.\\s]{3,4}$/', '', $request->file->getClientOriginalName()); //remove extenison
             $fileName = md5($withoutExt);
             if (File::where('name', $fileName)->exists()) {
-                $path = public_path("storage/uploads");
+                $path = (storage_path('app/uploads'));
                 $files = scandir($path);
                 $files = array_diff(scandir($path), array('.', '..'));
                 $matchingFiles = preg_grep('{' . $fileName . '}', $files);
                 if ($matchingFiles) {
                     foreach ($matchingFiles as $file) {
-                        return  response()->json(['status' => 200, 'message' => 'you already uploaded the file before', 'file' => asset("storage/uploads/$file")]);
+                        return  response()->json(['status' => 200, 'message' => 'you already uploaded the file before', 'file' => asset("uploads/$file")]);
                     }
                 }
             } elseif (!File::where('name', $fileName)->exists()) {
-                $filePath = $request->file('file')->storeAs('uploads', $fileName, 'public');
+                $filePath = $request->file('file')->storeAs("uploads", $fileName);
                 $fileModel->name = $fileName;
-                $fileModel->file_path = '/storage/' . $filePath;
+                $fileModel->file_path =  $filePath;
                 $fileModel->save();
                 return response()->json(['status' => 200, 'message' => 'File uploaded successfully']);
             } else {
@@ -42,6 +41,7 @@ class FileController extends Controller
             return response()
                 ->json(['status' => 404, 'message' => 'You Must upload type file']);
         }
+    
     }
 
 
@@ -50,7 +50,7 @@ class FileController extends Controller
     {
         if ($request->has('name')) {
             $fileName = md5($request->name);
-            $path = public_path("storage/uploads");
+            $path = ("storage/uploads");
             $file = File::Where('name', $fileName)->first()->name ?? null;
             if ($file) {
                 return  response()->json(['status' => 200, 'File Name' => $request->name, 'file' => asset("storage/uploads/$file")]);
@@ -70,8 +70,7 @@ class FileController extends Controller
 
         if ($request->has('name')) {
             $fileName = md5($request->name);
-            $path = public_path("storage/uploads");
-            $allFiles = Storage::files('public/uploads');
+            $allFiles = Storage::allFiles('uploads');
             $matchingFile = preg_grep('{' . md5($request->name) . '}', $allFiles);
             Storage::delete($matchingFile); // remove from uploads file
             $file = File::Where('name', $fileName)->first() ?? null;
